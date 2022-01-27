@@ -1,0 +1,64 @@
+esphome:
+  name: iot-uni-dongle
+  platform: ESP8266
+  board: esp12e
+
+wifi:
+  ssid: !secret wifi
+  password: !secret wifi_pw
+  # comment next line after first successful update
+  # use_address: iot-uni-dongle.local
+  ap:
+    ssid: "iot-uni-dongle"
+    password: "12345678"
+
+captive_portal:
+
+api:
+
+ota:
+
+remote_transmitter:
+  pin: GPIO13
+  carrier_duty_percent: 50%
+
+uart:
+  tx_pin: 1
+  rx_pin: 3
+  baud_rate: 9600
+
+climate:
+  - platform: midea
+    id: my_climate
+    transmitter_id:
+    name: Mr Cool Minisplit
+    period: 1s
+    num_attempts: 3
+    timeout: 2s
+
+sensor:
+  - platform: homeassistant
+    id: tv_room_temp
+    entity_id: sensor.0x00124b0024546ae0_temperature   # Sensor from HASS
+    internal: true
+    filters:
+      - throttle: 10s
+      - heartbeat: 2min             # Maximum interval between updates.
+      - debounce: 1s
+    on_value:
+      midea_ac.follow_me:
+        temperature: !lambda "return (x-32)*5/9;" # x is in F degrees in my case, midea expects C, use return x; in case your sensor works on C
+        beeper: false               # Optional. Beep on update.
+
+# template buttons for sending display control command and swing step actions
+button:
+  - platform: template
+    name: Display Toggle
+    icon: mdi:theme-light-dark
+    on_press:
+      midea_ac.display_toggle:
+  - platform: template
+    name: Swing Step
+    icon: mdi:tailwind
+    on_press:
+      midea_ac.swing_step:
