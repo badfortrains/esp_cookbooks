@@ -39,7 +39,7 @@ climate:
 sensor:
   - platform: homeassistant
     id: tv_room_temp
-    entity_id: sensor.0x00124b0024546ae0_temperature   # Sensor from HASS
+    entity_id: sensor.tv_room_temp_temperature   # Sensor from HASS
     internal: true
     filters:
       - throttle: 10s
