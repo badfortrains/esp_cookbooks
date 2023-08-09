@@ -7,3 +7,9 @@ view card reader logs
 ```
 esphome basic.yaml logs --device 192.168.86.42
 ```
+
+update rfid_led
+```
+esphome run rfid_led.yaml
+
+```

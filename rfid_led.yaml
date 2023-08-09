@@ -1,0 +1,99 @@
+esphome:
+  name: card-reader
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: arduino
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
+rc522_spi:
+  cs_pin: GPIO21
+
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812X  
+    pin: GPIO17
+    num_leds: 4
+    name: "rgb_lights"
+    id: rgb_lights
+    effects:
+      - addressable_fireworks:
+          name: Fireworks Effect With Custom Values
+      - addressable_scan:
+          name: Scan Effect With Custom Values
+      - addressable_flicker:
+          name: Flicker Effect With Custom Values
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+
+wifi:
+  ssid: !secret wifi
+  password: !secret wifi_pw
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Card-Reader Fallback Hotspot"
+    password: "e1dlZpy34fhG"
+
+captive_portal:
+
+binary_sensor:
+  - platform: rc522
+    uid: 2C-75-E4-1F
+    name: "Circle sticker tag"
+  - platform: rc522
+    uid: 4C-10-DE-1F
+    id: fireworks_tag
+    name: "Circle sticker tag fireworks"
+    on_state:
+    - lambda: |-
+        ESP_LOGD("main", "tag state: %d", id(fireworks_tag).state);
+        if (id(fireworks_tag).state) {
+          auto call = id(rgb_lights).turn_on();
+          call.set_effect("Fireworks Effect With Custom Values");
+          call.perform();
+        }
+  - platform: rc522
+    uid: 0C-14-D1-1F
+    name: "Circle sticker tag scan"
+    id: scan_tag
+    on_state:
+    - lambda: |-
+        ESP_LOGD("main", "tag state: %d", id(scan_tag).state);
+        if (id(scan_tag).state) {
+          auto call = id(rgb_lights).turn_on();
+          call.set_effect("Scan Effect With Custom Values");
+          call.perform();
+        }
+  - platform: rc522
+    uid: 4C-30-DD-1F
+    name: "Circle sticker tag pulse"
+    id: pulse_tag
+    on_state:
+      then:
+      - if:
+          condition:
+            binary_sensor.is_on: pulse_tag
+          then:
+            - light.turn_off: rgb_lights
+            - delay: 1s
+            - light.turn_on: rgb_lights
+            - delay: 2s
+            - lambda: |-
+                auto flicker_call = id(rgb_lights).make_call();
+                flicker_call.set_effect("Flicker Effect With Custom Values");
+                flicker_call.perform();
+
