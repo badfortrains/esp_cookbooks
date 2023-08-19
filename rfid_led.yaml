@@ -1,5 +1,5 @@
 esphome:
-  name: card-reader
+  name: rfid-led
 
 esp32:
   board: esp32doit-devkit-v1
@@ -19,16 +19,27 @@ light:
     type: GRB
     variant: WS2812X  
     pin: GPIO17
-    num_leds: 4
+    num_leds: 72
     name: "rgb_lights"
     id: rgb_lights
+    restore_mode: RESTORE_DEFAULT_ON
     effects:
       - addressable_fireworks:
           name: Fireworks Effect With Custom Values
+          spark_probability: 10%
       - addressable_scan:
           name: Scan Effect With Custom Values
+          scan_width: 4
       - addressable_flicker:
           name: Flicker Effect With Custom Values
+      - addressable_color_wipe:
+          name: Color Wipe
+
+globals:
+  - id: actual_effect
+    type: int
+    restore_value: no
+    initial_value: "0"
 
 # Enable logging
 logger:
@@ -43,10 +54,11 @@ wifi:
   ssid: !secret wifi
   password: !secret wifi_pw
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Card-Reader Fallback Hotspot"
-    password: "e1dlZpy34fhG"
+    # Enable fallback hotspot (captive portal) in case wifi connection fails
+    ap:
+      ssid: "Card-Reader Fallback Hotspot"
+      password: "e1dlZpy34fhG"
+
 
 captive_portal:
 
@@ -60,7 +72,6 @@ binary_sensor:
     name: "Circle sticker tag fireworks"
     on_state:
     - lambda: |-
-        ESP_LOGD("main", "tag state: %d", id(fireworks_tag).state);
         if (id(fireworks_tag).state) {
           auto call = id(rgb_lights).turn_on();
           call.set_effect("Fireworks Effect With Custom Values");
@@ -72,7 +83,6 @@ binary_sensor:
     id: scan_tag
     on_state:
     - lambda: |-
-        ESP_LOGD("main", "tag state: %d", id(scan_tag).state);
         if (id(scan_tag).state) {
           auto call = id(rgb_lights).turn_on();
           call.set_effect("Scan Effect With Custom Values");
@@ -88,6 +98,10 @@ binary_sensor:
           condition:
             binary_sensor.is_on: pulse_tag
           then:
+            - lambda: |-
+                auto call = id(rgb_lights).make_call();
+                call.set_rgb(0, 0.4, 0.2);
+                call.perform();
             - light.turn_off: rgb_lights
             - delay: 1s
             - light.turn_on: rgb_lights
@@ -96,4 +110,90 @@ binary_sensor:
                 auto flicker_call = id(rgb_lights).make_call();
                 flicker_call.set_effect("Flicker Effect With Custom Values");
                 flicker_call.perform();
+  - platform: rc522
+    uid: 6C-D9-AD-A9
+    name: "Cycle tag 1"
+    id: cycle_1
+    on_state:
+      then:
+      - if:
+          condition:
+            binary_sensor.is_on: cycle_1
+          then:
+            - lambda: |-
+                auto call = id(rgb_lights).make_call();
+                call.set_rgb(0, 0.4, 0.2);
+                call.perform();
+            - light.turn_off: rgb_lights
+            - delay: 1s
+            - light.turn_on: rgb_lights
+            - delay: 2s
+            - lambda: |-
+                auto flicker_call = id(rgb_lights).make_call();
+                flicker_call.set_effect("Flicker Effect With Custom Values");
+                flicker_call.perform();
+  - platform: rc522
+    uid: DC-D1-DC-1F
+    name: "Cycle tag 2"
+    id: cycle_2
+    on_state:
+    - lambda: |-
+        ESP_LOGD("main", "cycle_2: %d %d", id(scan_tag).state, id(actual_effect));
+        if (id(cycle_2).state) {
+          auto call = id(rgb_lights).turn_on();
+          if (id(actual_effect) == 0) 
+            call.set_effect("Fireworks Effect With Custom Values");
+          if (id(actual_effect) == 1)
+            call.set_effect("Scan Effect With Custom Values");
+          if (id(actual_effect) == 2)
+            call.set_effect("Color Wipe");
+          if (id(actual_effect) < 2)
+            id(actual_effect) += 1;
+          else
+            id(actual_effect) = 0;
+          call.perform();
+        }
+  - platform: rc522
+    uid: E2-EA-DA-0A
+    name: "Cycle tag 3"
+    id: cycle_3
+    on_state:
+    - lambda: |-
+        ESP_LOGD("main", "cycle_3: %d %d", id(scan_tag).state, id(actual_effect));
+        if (id(cycle_3).state) {
+          auto call = id(rgb_lights).turn_on();
+          if (id(actual_effect) == 0) 
+            call.set_effect("Fireworks Effect With Custom Values");
+          if (id(actual_effect) == 1)
+            call.set_effect("Scan Effect With Custom Values");
+          if (id(actual_effect) == 2)
+            call.set_effect("Color Wipe");
+          if (id(actual_effect) < 2)
+            id(actual_effect) += 1;
+          else
+            id(actual_effect) = 0;
+          call.perform();
+        }
+  - platform: rc522
+    uid: B9-C6-ED-8B
+    name: "Cycle tag 4"
+    id: cycle_4
+    on_state:
+    - lambda: |-
+        ESP_LOGD("main", "cycle_4: %d %d", id(scan_tag).state, id(actual_effect));
+        if (id(cycle_4).state) {
+          auto call = id(rgb_lights).turn_on();
+          if (id(actual_effect) == 0) 
+            call.set_effect("Fireworks Effect With Custom Values");
+          if (id(actual_effect) == 1)
+            call.set_effect("Scan Effect With Custom Values");
+          if (id(actual_effect) == 2)
+            call.set_effect("Color Wipe");
+          if (id(actual_effect) < 2)
+            id(actual_effect) += 1;
+          else
+            id(actual_effect) = 0;
+          call.perform();
+        }
+
 
